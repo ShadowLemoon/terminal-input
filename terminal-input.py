@@ -1,15 +1,85 @@
 import sys
 import argparse
+import locale
 import pyperclip
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionType
 
+# 检测系统语言
+def is_chinese_locale():
+    try:
+        lang = locale.getlocale()[0]
+        if lang:
+            return lang.startswith('zh') or lang.startswith('Chinese')
+        # 备用方案：检查环境变量
+        import os
+        for env in ('LANG', 'LC_ALL', 'LC_MESSAGES'):
+            val = os.environ.get(env, '')
+            if val.startswith('zh'):
+                return True
+        return False
+    except Exception:
+        return False
+
+# 多语言帮助信息
+HELP_EN = {
+    'description': 'Terminal multi-line input tool',
+    'single_line': 'Single-line mode: Enter submits, Alt+Enter for new line',
+    'help': 'show this help message and exit',
+    'epilog': '''
+Keyboard Shortcuts:
+  Ctrl+D          Submit (in default mode)
+  Enter           Submit (in single-line mode)
+  Alt+Enter       New line (in single-line mode)
+  Ctrl+A          Select all
+  Ctrl+C          Copy selection
+  Ctrl+V          Paste
+  Ctrl+X          Cut selection
+  Ctrl+Z          Undo
+  Ctrl+Y          Redo
+  Arrow keys      Move cursor (cancel selection if any)
+  Shift+Arrows    Extend selection
+  Backspace/Del   Delete character or selection
+'''
+}
+
+HELP_ZH = {
+    'description': '终端多行文本输入工具',
+    'single_line': '单行模式：Enter 提交，Alt+Enter 换行',
+    'help': '显示帮助信息并退出',
+    'epilog': '''
+快捷键说明：
+  Ctrl+D          提交（默认多行模式）
+  Enter           提交（单行模式）
+  Alt+Enter       换行（单行模式）
+  Ctrl+A          全选
+  Ctrl+C          复制选中内容
+  Ctrl+V          粘贴
+  Ctrl+X          剪切选中内容
+  Ctrl+Z          撤销
+  Ctrl+Y          重做
+  方向键          移动光标（有选区时取消选区）
+  Shift+方向键    扩展选区
+  Backspace/Del   删除字符或选中内容
+'''
+}
+
+# 选择语言
+HELP = HELP_ZH if is_chinese_locale() else HELP_EN
+
 # 解析命令行参数
-parser = argparse.ArgumentParser(description='Terminal multi-line input tool')
+parser = argparse.ArgumentParser(
+    description=HELP['description'],
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog=HELP['epilog'],
+    add_help=False)  # 禁用自动添加的 -h
+
+parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
+                    help=HELP['help'])
 parser.add_argument('-s', '--single-line', action='store_true',
-                    help='Single-line mode: Enter submits, Alt+Enter for new line')
+                    help=HELP['single_line'])
 args = parser.parse_args()
 
 # 定义快捷键
