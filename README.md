@@ -55,6 +55,24 @@ python terminal-input.py
 tinput
 ```
 
+### 单行模式
+
+使用 `-s` 或 `--single-line` 参数启用单行模式：
+
+```bash
+tinput -s
+```
+
+单行模式下：
+- **Enter** 直接提交
+- **Alt+Enter** 换行
+
+> 注意：由于 VT100 终端限制，Shift+Enter 和 Ctrl+Enter 无法在终端中识别。
+
+默认多行模式下：
+- **Enter** 换行
+- **Ctrl+D** 提交
+
 ## 打包
 
 使用 PyInstaller 打包:

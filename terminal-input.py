@@ -1,9 +1,16 @@
 import sys
+import argparse
 import pyperclip
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.selection import SelectionType
+
+# 解析命令行参数
+parser = argparse.ArgumentParser(description='Terminal multi-line input tool')
+parser.add_argument('-s', '--single-line', action='store_true',
+                    help='Single-line mode: Enter submits, Alt+Enter for new line')
+args = parser.parse_args()
 
 # 定义快捷键
 kb = KeyBindings()
@@ -15,6 +22,16 @@ _local_clipboard = ""
 @kb.add('c-d')
 def _(event):
     event.current_buffer.validate_and_handle()
+
+# 单行模式：Enter 提交，Alt+Enter/Shift+Enter/Ctrl+Enter 换行
+if args.single_line:
+    @kb.add('enter')
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
+    @kb.add('escape', 'enter')
+    def _(event):
+        event.current_buffer.insert_text('\n')
 
 # Ctrl+Z 为 撤销
 @kb.add('c-z', save_before=lambda e: False)
