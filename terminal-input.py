@@ -244,6 +244,9 @@ def _(event):
         text_to_paste = pyperclip.paste()
     except Exception:
         text_to_paste = ""
+    # 将 CRLF 转换为 LF
+    if text_to_paste:
+        text_to_paste = text_to_paste.replace('\r\n', '\n').replace('\r', '\n')
     # 如果有选区，先删除
     if buffer.selection_state:
         delete_selection(buffer)
@@ -267,6 +270,9 @@ def _(event):
         except Exception:
             pass
 
+    # 将 CRLF 转换为 LF
+    if data:
+        data = data.replace('\r\n', '\n').replace('\r', '\n')
     # 如果有选区，先删除
     if buffer.selection_state:
         delete_selection(buffer)
