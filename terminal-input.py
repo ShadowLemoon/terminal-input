@@ -304,8 +304,9 @@ def _(event):
 
 def get_input():
     # mouse_support=True: 允许鼠标点击移动光标、选择文本
+    # 提示符前加空行，避免 VS Code 终端命令覆盖第一行
     user_text = prompt(
-        '> ',
+        '\n> ',
         multiline=True,
         key_bindings=kb,
         mouse_support=True
