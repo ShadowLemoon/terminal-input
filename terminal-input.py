@@ -27,6 +27,7 @@ def is_chinese_locale():
 HELP_EN = {
     'description': 'Terminal multi-line input tool',
     'single_line': 'Single-line mode: Enter submits, Alt+Enter for new line',
+    'mouse': 'Enable mouse support (click to move cursor, select text)',
     'help': 'show this help message and exit',
     'epilog': '''
 Keyboard Shortcuts:
@@ -48,6 +49,7 @@ Keyboard Shortcuts:
 HELP_ZH = {
     'description': '终端多行文本输入工具',
     'single_line': '单行模式：Enter 提交，Alt+Enter 换行',
+    'mouse': '启用鼠标支持（点击移动光标、选择文本）',
     'help': '显示帮助信息并退出',
     'epilog': '''
 快捷键说明：
@@ -80,6 +82,8 @@ parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
                     help=HELP['help'])
 parser.add_argument('-s', '--single-line', action='store_true',
                     help=HELP['single_line'])
+parser.add_argument('-m', '--mouse', action='store_true',
+                    help=HELP['mouse'])
 args = parser.parse_args()
 
 # 定义快捷键
@@ -88,16 +92,35 @@ kb = KeyBindings()
 # 本地剪贴板缓存（用于处理 Windows 剪贴板同步延迟）
 _local_clipboard = ""
 
-# 绑定 Ctrl+D 为提交 (Submit)
+# 保存提交前的文本
+_submitted_text = None
+
+# 提交辅助函数：保存文本 → 清空缓冲区 → 提交
+def _submit_and_clear(event):
+    global _submitted_text
+    buffer = event.current_buffer
+    # 保存文本以便后续打印
+    _submitted_text = buffer.text
+    # 清空缓冲区（视觉清除）
+    buffer.reset()
+    # 提交空缓冲区以退出 prompt
+    buffer.validate_and_handle()
+
+# 绑定 Ctrl+D：清空缓冲区并提交
 @kb.add('c-d')
 def _(event):
-    event.current_buffer.validate_and_handle()
+    _submit_and_clear(event)
 
-# 单行模式：Enter 提交，Alt+Enter/Shift+Enter/Ctrl+Enter 换行
+# 多行模式：Alt+Enter 提交（清空缓冲区并打印）
+@kb.add('escape', 'enter')
+def _(event):
+    _submit_and_clear(event)
+
+# 单行模式：Enter 提交，Alt+Enter 换行（覆盖上面的提交绑定）
 if args.single_line:
     @kb.add('enter')
     def _(event):
-        event.current_buffer.validate_and_handle()
+        _submit_and_clear(event)
 
     @kb.add('escape', 'enter')
     def _(event):
@@ -309,19 +332,24 @@ def _(event):
     buffer.insert_text(data)
 
 def get_input():
-    # mouse_support=True: 允许鼠标点击移动光标、选择文本
+    global _submitted_text
     # 提示符前加空行，避免 VS Code 终端命令覆盖第一行
-    user_text = prompt(
+    prompt(
         '\n> ',
         multiline=True,
         key_bindings=kb,
-        mouse_support=True
+        mouse_support=args.mouse
     )
-    return user_text
+    result = _submitted_text
+    _submitted_text = None
+    return result
 
 if __name__ == "__main__":
     try:
-        get_input()
+        result = get_input()
+        # 打印所有输入的文本
+        if result is not None:
+            print(result)
     except EOFError:
         # 如果用户按 Ctrl+D 在空缓冲区，退出
         sys.exit(1)
